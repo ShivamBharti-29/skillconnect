@@ -1,297 +1,403 @@
-diff --git a/README.md b/README.md
-index e69de29..0c1f2b5 100644
---- a/README.md
-+++ b/README.md
-@@
--# SkillConnect
--
--
--SkillConnect is a decentralized marketplace for skilled workers and households, featuring live GPS tracking and escrow payments.
--
--## Production Deployment Notes
--
--### Backend on Render (Free Tier)
--
--This project is currently deployed on Render's Free Tier. 
--
--**Important Note on Cold Starts:**
--
--Render automatically spins down free web services after 15 minutes of inactivity. When you visit the app after a period of inactivity, the very first API request or Socket.io connection may take **30-50 seconds** to respond. 
--
--*If the app appears frozen or stuck on a loading spinner during initial visit, please wait a minute! This is a known Render limitation, not a bug in the code.*
--
--**Recommendations:**
--
--1. Upgrade to a paid \"Starter\" instance on Render ($7/mo) to prevent sleeping entirely.
--2. Alternatively, set up a free uptime monitor (like [UptimeRobot](https://uptimerobot.com)) to ping `https://skillconnect-backend-97u2.onrender.com/api/workers/nearby` every 10 minutes to keep the instance alive 24/7.
-+# 🚀 SkillConnect
-+
-+> **A decentralized marketplace that connects skilled workers with households, offering live GPS tracking, secure escrow payments, and AI‑enhanced matching.**
-+
-+![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
-+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-green)
-+![React](https://img.shields.io/badge/React-Frontend-blue)
-+![Supabase](https://img.shields.io/badge/Supabase-Auth%2FDB-3ECF8E)
-+
-+---
-+
-+# 📖 Overview
-+
-+Recruiters and homeowners often struggle to find trustworthy, qualified service providers quickly. Traditional platforms rely on manual vetting and simple keyword matching, which can lead to mismatched expectations, security concerns, and delayed payments.
-+
-+**SkillConnect** solves these problems by providing:
-+- Real‑time geolocation of nearby workers.
-+- Automated escrow handling to protect both parties.
-+- AI‑driven skill matching and recommendation.
-+- Secure authentication and data storage via Supabase.
-+
-+The platform is built as a modern full‑stack web app with a **FastAPI** backend, **React** (or Streamlit if you prefer) frontend, and **Supabase** for auth & PostgreSQL. It showcases a clean micro‑service architecture that can be deployed on Render, Vercel, or any cloud provider.
-+
-+---
-+
-+# ✨ Features
-+
-+* 🔐 **Secure authentication** with Supabase (email/password, magic link, OAuth). 
-+* 📍 **Live GPS tracking** – workers broadcast their location; households see them on an interactive map. 
-+* 💰 **Escrow payments** – funds are held securely until the job is marked complete. 
-+* 🤖 **AI‑powered matching** – skill extraction and semantic similarity rank workers against job requirements. 
-+* 📊 **Analytics dashboard** – real‑time stats on jobs, earnings, and SOS alerts. 
-+* 🆘 **SOS panic button** – instant emergency alerts to admins with live location. 
-+* 📱 **Responsive UI** – works on web browsers and mobile devices (via Capacitor). 
-+* 🛠️ **Admin panel** – manage users, monitor SOS incidents, review payments, and generate CSV reports. 
-+
-+---
-+
-+# 🛠️ Tech Stack
-+
-+### Frontend
-+* **React** (Create‑React‑App) – UI components, React‑Router, Redux Toolkit.
-+* **Leaflet** – map rendering and 2‑dsphere queries.
-+* **Socket.io‑client** – real‑time updates (location, SOS, booking status).
-+
-+### Backend
-+* **FastAPI** – high‑performance REST API.
-+* **Uvicorn** – ASGI server.
-+* **MongoDB** – flexible storage for users, workers, bookings, escrow, SOS logs.
-+* **Socket.io** – bi‑directional events for live tracking and chat.
-+* **Supabase** – authentication (via JWT), optional DB sync.
-+
-+### AI & NLP
-+* **spaCy** – skill and entity extraction from job descriptions.
-+* **Sentence‑Transformers** – generate sentence embeddings for semantic similarity.
-+* **Groq LLM** – generate improvement suggestions for workers (optional).
-+
-+### DevOps
-+* **Render (Free tier)** – backend hosting (auto‑scale, HTTPS). 
-+* **GitHub Actions** – CI linting & test runs.
-+* **UptimeRobot** – keep free Render service alive (ping endpoint).
-+
-+---
-+
-+# 🏗️ System Architecture
-+
-+```text
-+                        User
-+                          │
-+                          ▼
-+                 React Frontend (Web / Mobile)
-+                          │
-+                          ▼
-+                   FastAPI Backend (Uvicorn)
-+                          │
-+        ┌─────────────────┼─────────────────┐
-+        ▼                 ▼                 ▼
-+ Resume Parser      NLP Processing      Supabase
-+        │                 │         Authentication & DB
-+        ▼                 ▼
-+Sentence Embeddings   Skill Extraction
-+        │                 │
-+        └──────────┬──────┘
-+                   ▼
-+          Semantic Similarity Engine
-+                   │
-+                   ▼
-+            Groq LLM (optional)
-+                   │
-+                   ▼
-+          Matching Score & Suggestions
-+                   │
-+                   ▼
-+          Interactive Dashboard (React)
-+```
-+
-+---
-+
-+# ⚙️ Workflow
-+
-+1. **Sign‑up / Sign‑in** – Supabase handles JWT issuance.
-+2. **Upload / Set profile** – Workers provide skills, hourly rate, and enable GPS.
-+3. **Household posts a job** – Title, description, budget, location.
-+4. **Backend extracts text**, runs **spaCy** to pull out required skills.
-+5. **Sentence‑Transformer** encodes both job description & each worker’s profile.
-+6. **Semantic similarity** scores each worker; top‑N are returned.
-+7. **Escrow creation** – household pays into escrow; funds are held.
-+8. **Live tracking** – worker’s device streams location to backend → Socket.io → household map.
-+9. **Job acceptance** – worker accepts, escrow is locked.
-+10. **Completion** – worker marks job done → escrow released to worker.
-+11. **SOS** – either party can press panic button; admin receives real‑time alert.
-+12. **Analytics** – admin dashboards display bookings, earnings, SOS incidents.
-+
-+---
-+
-+# 📂 Project Structure
-+
-+```text
-+skillconnect/
-+│
-+├─ backend/
-+│   ├─ api/                # FastAPI routers (auth, workers, bookings, admin)
-+│   ├─ models/             # Pydantic models & Mongo schemas
-+│   ├─ services/           # Business logic (matching, escrow, SOS)
-+│   ├─ utils/              # Helper functions (pdf parsing, embeddings)
-+│   └─ main.py             # Application entry point
-+│
-+├─ frontend/
-+│   ├─ src/
-+│   │   ├─ components/     # Reusable UI components
-+│   │   ├─ pages/          # Route pages (Login, Dashboard, JobBoard, Admin)
-+│   │   ├─ store/          # Redux Toolkit slices
-+│   │   └─ App.js
-+│   └─ public/             # Static assets
-+│
-+├─ .env.example           # Example env file
-+├─ requirements.txt       # Python dependencies
-+├─ package.json           # Node dependencies (React)
-+├─ README.md              # **This file**
-+└─ .gitignore
-+```
-+
-+---
-+
-+# 🚀 Installation
-+
-+## 1️⃣ Clone the repository
-+
-+```bash
-+git clone https://github.com/ShivamBharti-29/skillconnect.git
-+cd skillconnect
-+```
-+
-+## 2️⃣ Backend setup
-+
-+### Windows
-+
-+```bash
-+python -m venv .venv
-+.venv\\Scripts\\activate
-+pip install -r requirements.txt
-+```
-+
-+### Linux / macOS
-+
-+```bash
-+python3 -m venv .venv
-+source .venv/bin/activate
-+pip install -r requirements.txt
-+```
-+
-+## 3️⃣ Frontend setup
-+
-+```bash
-+cd frontend
-+npm install   # or yarn install
-+```
-+
-+---
-+
-+# 🔑 Environment Variables
-+
-+Create a `.env` file in the project root (copy from `.env.example`):
-+
-+```env
-+# Backend
-+MONGO_URI=mongodb://127.0.0.1:27017/skillconnect
-+JWT_SECRET=your_random_secret_key
-+GROQ_API_KEY=your_groq_key   # optional, for LLM suggestions
-+
-+# Supabase
-+SUPABASE_URL=https://YOUR-PROJECT.supabase.co
-+SUPABASE_ANON_KEY=your_anon_key
-+SUPABASE_SERVICE_KEY=your_service_role_key
-+```
-+
-+---
-+
-+# ▶️ Running the Application
-+
-+## Backend (FastAPI)
-+
-+```bash
-+uvicorn backend.main:app --reload
-+```
-+
-+Backend URL: `http://127.0.0.1:8000`
-+
-+## Frontend (React)
-+
-+```bash
-+cd frontend
-+npm start   # runs on http://localhost:3000
-+```
-+
-+---
-+
-+# 🧠 AI Matching Pipeline
-+
-+```text
-+Job Description (text)   →   spaCy skill extraction   →   Sentence‑Transformer embedding
-+Worker profiles (text)   →   Same pipeline
-+
-+Compute cosine similarity → Rank workers → Return top‑N matches
-+
-+(Optional) Groq LLM → Generate personalized improvement tips for workers.
-+```
-+
-+---
-+
-+# 📸 Screenshots
-+
-+*(Add screenshots of the following pages after you run the app)*
-+- Login / Sign‑up
-+- Household job posting
-+- Worker profile & location map
-+- Booking flow
-+- Admin SOS dashboard
-+- Escrow status view
-+
-+---
-+
-+# 🎥 Demo
-+
-+**Live Frontend** – https://skillconnect-frontend.example.com (replace with actual URL when deployed)
-+
-+**Backend API Docs** – `http://127.0.0.1:8000/docs`
-+
-+---
-+
-+# 🚀 Deployment Notes
-+
-+### Backend (Render, Free Tier)
-+- Deployed at `https://skillconnect-backend.onrender.com`.
-+- **Cold start**: First request after 15 min of inactivity may take 30‑50 s. Use an uptime monitor (UptimeRobot) to ping `/api/health` every 5 min.
-+
-+### Frontend (Vercel / Netlify)
-+- Connect the `frontend` folder to Vercel for automatic builds.
-+- Set environment variables in the Vercel dashboard to match your Supabase project.
-+
-+---
-+
-+# 👨‍💻 Author
-+
-+**Shivam Bharti** – Full‑stack developer
-+- GitHub: https://github.com/ShivamBharti-29
-+- LinkedIn: https://www.linkedin.com/in/shivam-kumar-bharti/
-+
-+--- 
-+
-+*Feel free to open issues or submit pull requests to improve the project!*
+# 🚀 SkillConnect
+
+An end-to-end decentralized gig-economy platform connecting households with verified skilled workers. SkillConnect provides **real-time geospatial tracking, secure escrow payments, doorstep presence verification, emergency SOS alerts, and an AI-powered offline support chatbot.**
+
+![Node.js](https://img.shields.io/badge/Node.js-v18%20%7C%20v20%20%7C%20v22-339933?logo=node.js&logoColor=white)
+![Express.js](https://img.shields.io/badge/Express.js-Backend-000000?logo=express&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
+![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose%202dsphere-47A248?logo=mongodb&logoColor=white)
+![Socket.io](https://img.shields.io/badge/Socket.io-Realtime-010101?logo=socketdotio&logoColor=white)
+![Capacitor](https://img.shields.io/badge/Capacitor-Android%20%7C%20PWA-119EFF?logo=capacitor&logoColor=white)
+
+---
+
+## 📚 Table of Contents
+
+- [Project Overview](#-project-overview)
+- [Key Problems & Solutions](#-key-problems--solutions)
+- [System Architecture](#️-system-architecture)
+- [End-to-End System Workflow](#-end-to-end-system-workflow)
+- [Features](#-role-wise-feature-matrix)
+- [Tech Stack](#️-tech-stack--dependencies)
+- [Environment Variables](#-environment-variables-configuration)
+- [Installation](#-installation--how-to-run)
+- [Project Structure](#-project-directory-structure)
+- [Author](#-author)
+
+---
+
+## 📖 Project Overview
+
+**SkillConnect** bridges the gap between households and verified informal gig workers such as plumbers, electricians, cleaners, and carpenters.
+
+Traditional service-booking platforms often face problems such as worker impersonation, payment disputes, unreliable service dispatch, and a lack of emergency safety mechanisms.
+
+SkillConnect addresses these challenges through:
+
+- 📍 **Geospatial Worker Matching:** Uses MongoDB `2dsphere` spatial indexing and dynamic location-based queries to find available, verified workers within a 5 km radius.
+- 🔒 **Automated Escrow Payments:** Locks payments during booking and releases funds only after successful job completion.
+- 🛡️ **Doorstep Presence Verification:** Verifies worker presence at the customer's location before activating a job.
+- 🆘 **Emergency SOS Protocol:** Sends emergency alerts with live GPS coordinates and incident information to the admin dashboard.
+- 🤖 **AI-Powered Support Chatbot:** Uses a local knowledge base containing 3,000+ FAQ chunks to provide instant answers and automatically escalate support tickets.
+
+---
+
+## 🎯 Key Problems & Solutions
+
+| Problem | SkillConnect Solution |
+|---|---|
+| Worker Impersonation | Doorstep presence verification before job activation. |
+| Payment Fraud & Disputes | Automated escrow payment lifecycle: `none` → `held` → `released`. |
+| Emergency Safety Issues | One-tap SOS alerts with live GPS tracking through Socket.io. |
+| Unreliable Worker Dispatch | Geospatial worker matching with batched 5-worker broadcast rounds. |
+| Lack of Instant Support | Local AI chatbot with 3,000+ FAQ chunks and automatic support ticket generation. |
+
+---
+
+## 🏗️ System Architecture
+
+![System Architecture](figure1_system_architecture.png)
+
+The platform follows a layered architecture connecting household, worker, and admin applications with backend services and MongoDB persistence.
+
+```mermaid
+flowchart TB
+    subgraph Client["1. Client Presentation Layer"]
+        H["🏠 Household Web App<br/>React 18 / Redux / Leaflet"]
+        W["👷 Worker Mobile / PWA<br/>Capacitor / Live GPS"]
+        A["🛡️ Admin Dashboard<br/>Emergency Dispatch / Analytics"]
+    end
+
+    subgraph Gateway["2. API Gateway & Security"]
+        C["CORS & Rate Limiter"]
+        J["JWT Authentication & RBAC"]
+        U["Multer Media Upload"]
+    end
+
+    subgraph Backend["3. Backend Services - Node.js & Express"]
+        AUTH["🔐 Authentication & Verification"]
+        GEO["📍 Geospatial Matching Engine"]
+        ESC["💰 Escrow Payment Controller"]
+        SOCK["⚡ Socket.io Real-Time Services"]
+        AI["🤖 Local AI FAQ Chatbot"]
+    end
+
+    subgraph Database["4. MongoDB Persistence Layer"]
+        USERS[("Users Collection")]
+        BOOK[("Bookings & Escrow")]
+        SOS[("SOS Emergency Logs")]
+        KB[("Knowledge Base & Chat Logs")]
+    end
+
+    H --> Gateway
+    W --> Gateway
+    A --> Gateway
+
+    Gateway --> AUTH
+    Gateway --> GEO
+    Gateway --> ESC
+    Gateway --> AI
+
+    W <--> SOCK
+    H <--> SOCK
+    SOCK --> A
+
+    AUTH --> USERS
+    GEO --> USERS
+    ESC --> BOOK
+    SOCK --> SOS
+    AI --> KB
+```
+
+---
+
+## 🔄 End-to-End System Workflow
+
+SkillConnect follows a complete service-booking lifecycle, from worker discovery to payment settlement.
+
+```mermaid
+sequenceDiagram
+    autonumber
+
+    actor Customer as 🏠 Household
+    participant System as ⚙️ SkillConnect
+    actor Worker as 👷 Worker
+    actor Admin as 🛡️ Admin
+
+    Note over Customer,System: 1. Worker Discovery
+
+    Customer->>System: Search workers using GPS coordinates
+    System->>System: MongoDB 2dsphere geospatial query
+    System-->>Customer: Display nearby workers on map
+
+    Note over Customer,Worker: 2. Booking & Dispatch
+
+    Customer->>System: Create service booking
+    System->>System: Lock payment in escrow
+    System->>Worker: Send real-time booking request
+    Worker->>System: Accept booking
+    System-->>Customer: Confirm booking and live tracking
+
+    Note over Customer,Worker: 3. Presence Verification
+
+    Worker->>Customer: Arrive at doorstep
+    Customer->>System: Verify worker presence
+    System->>System: Update status to in_progress
+
+    Note over Customer,Admin: 4. Emergency SOS
+
+    alt Emergency Occurs
+        Customer->>System: Trigger SOS alert
+        System->>System: Record incident and GPS coordinates
+        System-->>Admin: Broadcast emergency alert
+    end
+
+    Note over Customer,Worker: 5. Completion & Payment
+
+    Worker->>System: Mark job as complete
+    Customer->>System: Confirm successful completion
+    System->>System: Release escrow funds
+    System-->>Worker: Credit worker balance
+    Customer->>System: Submit rating and review
+```
+
+---
+
+## ✨ Features
+
+### 👨‍👩‍👧 Household (Customer) Module
+
+- Search nearby verified workers using an interactive map.
+- Book services with escrow-based payment protection.
+- Track worker location in real time.
+- Receive live worker arrival updates.
+- Access the AI-powered support chatbot.
+- Trigger emergency SOS alerts with live GPS coordinates.
+- Submit ratings and reviews after service completion.
+
+### 👷 Worker Module
+
+- Receive real-time job requests through WebSockets.
+- Accept or reject service bookings.
+- View secured escrow payment information.
+- Verify arrival at the customer's doorstep.
+- Manage availability using Online/Offline status.
+- Track job progress and completion.
+- Access emergency SOS protection.
+
+### 🛡️ Admin Module
+
+- Monitor platform activity and active bookings.
+- Manage household and worker accounts.
+- Verify workers and manage user moderation.
+- Monitor emergency SOS alerts.
+- Track incidents using live GPS coordinates.
+- Audit escrow payments and transactions.
+- Handle disputes and support requests.
+
+### 🤖 AI & Intelligent Features
+
+- Local AI FAQ support chatbot.
+- Knowledge base containing 3,000+ FAQ chunks.
+- Instant responses without cloud API dependency.
+- Automatic support ticket escalation.
+- Intelligent worker discovery using geospatial matching.
+
+### 🔐 Security & Payment Features
+
+- JWT-based authentication.
+- Role-Based Access Control (RBAC).
+- Bcrypt password hashing.
+- Automated escrow payment lifecycle.
+- Doorstep presence verification.
+- Emergency incident logging.
+
+---
+
+## 🛠️ Tech Stack & Dependencies
+
+### Frontend
+- React 18
+- React Router v6
+- Redux Toolkit
+- Leaflet Maps
+- Lucide React
+
+### Mobile / PWA
+- Capacitor
+- Android Build Support
+- Progressive Web Application (PWA)
+
+### Backend
+- Node.js
+- Express.js
+
+### Database & Geospatial
+- MongoDB
+- Mongoose
+- MongoDB `2dsphere` Geospatial Indexing
+
+### Real-Time Communication
+- Socket.io
+- WebSocket Communication
+
+### Security & Authentication
+- JSON Web Tokens (JWT)
+- Bcrypt.js
+- CORS
+- Multer
+
+### Email & Notifications
+- NodeMailer
+- Twilio (SMS fallback)
+
+### AI Support Engine
+- Local Vector RAG Knowledge Base
+- 3,000+ Pre-seeded FAQ Chunks
+
+---
+
+## 🔑 Environment Variables Configuration
+
+Create a `.env` file inside the **backend** directory.
+
+```env
+# Server Configuration
+PORT=5001
+
+# MongoDB Connection
+MONGO_URI=mongodb://127.0.0.1:27017/skillconnect
+
+# JWT Authentication
+JWT_SECRET=replace_with_a_long_random_secret
+
+# Frontend URL
+FRONTEND_URL=http://localhost:3000
+
+# Optional Third-Party Services
+GEMINI_API_KEY=
+CLOUDINARY_URL=
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_PHONE_NUMBER=
+```
+
+### Frontend Environment Variables (Optional)
+
+Create a `.env` file inside the **frontend** directory.
+
+```env
+REACT_APP_API_URL=http://localhost:5001/api
+```
+
+**Note:** Replace placeholder values with your own credentials. Never upload actual API keys, passwords, or secrets to GitHub.
+
+---
+
+## ⚙️ Installation & How to Run
+
+### 📋 Prerequisites
+
+Make sure you have installed:
+
+- Node.js (v18.x, v20.x, or v22.x)
+- MongoDB (Local Installation or MongoDB Atlas)
+- Git
+- npm
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/ShivamBharti-29/skillconnect.git
+
+cd skillconnect
+```
+
+### 2. Backend Setup
+
+Open **Terminal 1**:
+
+```bash
+cd backend
+
+npm install
+
+npm run dev
+```
+
+Backend server will run at:
+
+```text
+http://localhost:5001
+```
+
+### 3. Frontend Setup
+
+Open **Terminal 2**:
+
+```bash
+cd frontend
+
+npm install
+
+npm start
+```
+
+Frontend application will run at:
+
+```text
+http://localhost:3000
+```
+
+---
+
+## 📂 Project Directory Structure
+
+```text
+skillconnect/
+│
+├── backend/
+│   ├── config/             # Database connection and environment configuration
+│   ├── controllers/        # Authentication, bookings, workers, chatbot and admin logic
+│   ├── middleware/         # JWT authentication, error handling and upload filters
+│   ├── models/             # Mongoose database models
+│   ├── routes/             # REST API route definitions
+│   ├── sockets/            # Socket.io live tracking and SOS handlers
+│   ├── utils/              # Geospatial algorithms and chatbot engine
+│   ├── server.js           # Express and Socket.io server
+│   ├── .env                # Backend environment variables
+│   └── package.json        # Backend dependencies
+│
+├── frontend/
+│   ├── public/             # Static assets and HTML template
+│   └── src/
+│       ├── components/     # Reusable UI components
+│       ├── pages/          # Household, Worker, Admin and Booking pages
+│       ├── store/          # Redux Toolkit state management
+│       ├── App.js          # Main application routing
+│       └── index.js        # React application entry point
+│
+├── shared/                 # Shared theme tokens, constants and utilities
+│
+├── figure1_system_architecture.png
+│
+├── package.json            # Root package configuration
+│
+└── README.md               # Project documentation
+```
+
+---
+
+## ⭐ Support
+
+If you find SkillConnect useful, please consider giving this repository a ⭐ on GitHub.
+
+Your support and feedback are always appreciated!
+
+---
+
+<div align="center">
+
+**🚀 SkillConnect — Connecting People with Trusted Skilled Workers.**
+
+</div>
